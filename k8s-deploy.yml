@@ -1,0 +1,116 @@
+---
+# Create monitoring namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+---
+# React App Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mern-app-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mern-app
+  template:
+    metadata:
+      labels:
+        app: mern-app
+    spec:
+      containers:
+      - name: mern-app-container
+        image: jana119/mern-app:latest
+        ports:
+        - containerPort: 80
+---
+# React App Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mern-app-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: mern-app
+  ports:
+    - port: 80
+      targetPort: 80
+---
+# Prometheus Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:latest
+        ports:
+        - containerPort: 9090
+---
+# Prometheus Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9090
+  selector:
+    app: prometheus
+---
+# Grafana Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: GF_SECURITY_ADMIN_USER
+          value: "admin"
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: "admin123"
+---
+# Grafana Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 3000
+  selector:
+    app: grafana
